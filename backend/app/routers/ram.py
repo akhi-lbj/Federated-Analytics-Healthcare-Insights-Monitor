@@ -10,7 +10,7 @@ from app.services.ram_client import ram_service
 COOKIE_NAME = "ram_sid"
 
 async def get_session_context(request: Request, response: Response) -> str:
-    raw_sid = request.cookies.get(COOKIE_NAME)
+    raw_sid = request.headers.get("X-Session-Id") or request.cookies.get(COOKIE_NAME)
     if not raw_sid:
         raw_sid = secrets.token_urlsafe(24)
         response.set_cookie(
@@ -18,13 +18,24 @@ async def get_session_context(request: Request, response: Response) -> str:
             value=raw_sid,
             max_age=86400 * 30,
             httponly=True,
-            samesite="lax",
-            secure=settings.COOKIE_SECURE,
+            samesite="none",
+            secure=True,
             path="/"
         )
     team_id = request.headers.get("X-Team-Id", "default")
     sid = f"{raw_sid}@{team_id}"
     request.state.sid = sid
+    request.state.raw_sid = raw_sid
+
+    # Auto-hydrate session token from Authorization header if provided
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        bearer_token = auth_header.split(" ", 1)[1]
+        session = ram_service.get_or_create_session(sid)
+        if not session.get("token"):
+            session["token"] = bearer_token
+            session["expires_at"] = time.time() + 300
+
     return sid
 
 router = APIRouter(dependencies=[Depends(get_session_context)])
@@ -67,11 +78,21 @@ async def health_check(request: Request):
 # ── Authentication Endpoints ──
 @router.post("/auth/device/start")
 async def device_start(request: Request):
-    return await ram_service.start_device_flow(request.state.sid)
+    res = await ram_service.start_device_flow(request.state.sid)
+    res["sessionId"] = getattr(request.state, "raw_sid", None)
+    return res
+
+class DevicePollRequest(BaseModel):
+    deviceCode: Optional[str] = None
+    verifier: Optional[str] = None
 
 @router.post("/auth/device/poll")
-async def device_poll(request: Request):
-    return await ram_service.poll_device_flow(request.state.sid)
+async def device_poll(body: Optional[DevicePollRequest] = None, request: Request = None):
+    device_code = body.deviceCode if body else None
+    verifier = body.verifier if body else None
+    res = await ram_service.poll_device_flow(request.state.sid, device_code=device_code, verifier=verifier)
+    res["sessionId"] = getattr(request.state, "raw_sid", None)
+    return res
 
 class RestoreSessionRequest(BaseModel):
     session: Dict[str, Any]

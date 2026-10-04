@@ -149,21 +149,29 @@ class RamClientService:
             "expires_at": time.time() + data.get("expires_in", 600),
             "interval": data.get("interval", 5),
         }
+        self._save_sessions_to_disk()
         return {
             "userCode": data.get("user_code"),
             "verificationUri": data.get("verification_uri"),
             "verificationUriComplete": data.get("verification_uri_complete"),
+            "deviceCode": data.get("device_code"),
+            "verifier": verifier,
             "expiresIn": data.get("expires_in", 600),
             "interval": data.get("interval", 5),
         }
 
-    async def poll_device_flow(self, sid: str) -> Dict[str, Any]:
+    async def poll_device_flow(
+        self,
+        sid: str,
+        device_code: Optional[str] = None,
+        verifier: Optional[str] = None,
+    ) -> Dict[str, Any]:
         session = self.get_or_create_session(sid)
         device_state = session.get("device", {})
-        device_code = device_state.get("device_code")
-        verifier = device_state.get("verifier")
+        code_to_use = device_code or device_state.get("device_code")
+        verifier_to_use = verifier or device_state.get("verifier")
 
-        if not device_code or not verifier:
+        if not code_to_use or not verifier_to_use:
             raise HTTPException(status_code=400, detail="No active device flow in progress. Start sign in first.")
 
         token_url = f"{settings.KEYCLOAK_URL}/realms/{settings.REALM}/protocol/openid-connect/token"
@@ -173,8 +181,8 @@ class RamClientService:
                 data={
                     "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                     "client_id": settings.CLIENT_ID,
-                    "device_code": device_code,
-                    "code_verifier": verifier,
+                    "device_code": code_to_use,
+                    "code_verifier": verifier_to_use,
                 },
             )
 
@@ -185,13 +193,19 @@ class RamClientService:
             session["expires_at"] = time.time() + data.get("expires_in", 300)
             session["device"] = {}
             self._save_sessions_to_disk()
-            return {"ok": True, "authenticated": True, "session": self.export_session(sid)}
+            return {
+                "ok": True,
+                "authenticated": True,
+                "session": self.export_session(sid),
+                "token": data["access_token"],
+            }
 
         err = data.get("error")
         if err in ("authorization_pending", "slow_down"):
             return {"pending": True, "slowDown": err == "slow_down"}
         if err == "expired_token":
             session["device"] = {}
+            self._save_sessions_to_disk()
             raise HTTPException(status_code=400, detail="Device code has expired. Please initiate sign in again.")
 
         raise HTTPException(status_code=400, detail=data.get("error_description", "Device authorization failed."))

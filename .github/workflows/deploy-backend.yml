@@ -12,7 +12,7 @@ on:
 env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY: fahim-ram-backend
-  LAMBDA_FUNCTION_NAME: fahim-backend-gateway
+  LAMBDA_FUNCTION_NAME: fahim-ram-backend
 
 jobs:
   build-and-push:

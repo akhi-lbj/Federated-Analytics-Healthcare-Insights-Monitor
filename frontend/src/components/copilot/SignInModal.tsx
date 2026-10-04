@@ -27,6 +27,8 @@ export const SignInModal: React.FC<SignInModalProps> = ({
     userCode: string;
     verificationUri: string;
     verificationUriComplete?: string;
+    deviceCode?: string;
+    verifier?: string;
     expiresIn: number;
     interval: number;
   } | null>(null);
@@ -52,7 +54,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
     const intervalId = setInterval(async () => {
       try {
         setPollingStatus('Waiting for approval in browser...');
-        const res = await pollDeviceLogin();
+        const res = await pollDeviceLogin(deviceData.deviceCode, deviceData.verifier);
         if (!isMounted) return;
 
         if (res.ok && res.authenticated) {

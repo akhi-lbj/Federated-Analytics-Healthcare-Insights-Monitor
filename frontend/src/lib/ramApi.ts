@@ -3,12 +3,22 @@ import { TraceAggregate, RamAttachment, RamTurn } from '../types/ram';
 const BASE_URL = import.meta.env.VITE_RAM_GATEWAY_URL || '/api/ram';
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || 'team-ehs-ops';
 
+let activeSessionId: string | null = localStorage.getItem('ram_session_id');
+
 function getHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
-  return {
+  const token = localStorage.getItem('ram_token');
+  const headers: Record<string, string> = {
     'X-Team-Id': TEAM_ID,
     'Accept': 'application/json',
     ...customHeaders,
   };
+  if (activeSessionId) {
+    headers['X-Session-Id'] = activeSessionId;
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
 }
 
 export async function checkRamHealth(): Promise<{
@@ -39,8 +49,11 @@ export async function startDeviceLogin(): Promise<{
   userCode: string;
   verificationUri: string;
   verificationUriComplete?: string;
+  deviceCode?: string;
+  verifier?: string;
   expiresIn: number;
   interval: number;
+  sessionId?: string;
 }> {
   const res = await fetch(`${BASE_URL}/auth/device/start`, {
     method: 'POST',
@@ -48,23 +61,39 @@ export async function startDeviceLogin(): Promise<{
     headers: getHeaders({ 'Content-Type': 'application/json' }),
   });
   if (!res.ok) throw new Error(`Failed to start device login: ${await res.text()}`);
-  return await res.json();
+  const data = await res.json();
+  if (data.sessionId) {
+    activeSessionId = data.sessionId;
+    localStorage.setItem('ram_session_id', data.sessionId);
+  }
+  return data;
 }
 
-export async function pollDeviceLogin(): Promise<{
+export async function pollDeviceLogin(deviceCode?: string, verifier?: string): Promise<{
   ok?: boolean;
   authenticated?: boolean;
   session?: any;
+  token?: string;
   pending?: boolean;
   slowDown?: boolean;
+  sessionId?: string;
 }> {
   const res = await fetch(`${BASE_URL}/auth/device/poll`, {
     method: 'POST',
     credentials: 'include',
     headers: getHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ deviceCode, verifier }),
   });
   if (!res.ok) throw new Error(`Polling failed: ${await res.text()}`);
-  return await res.json();
+  const data = await res.json();
+  if (data.token) {
+    localStorage.setItem('ram_token', data.token);
+  }
+  if (data.sessionId) {
+    activeSessionId = data.sessionId;
+    localStorage.setItem('ram_session_id', data.sessionId);
+  }
+  return data;
 }
 
 export async function restoreSession(session: any): Promise<{
@@ -79,13 +108,18 @@ export async function restoreSession(session: any): Promise<{
       body: JSON.stringify({ session }),
     });
     if (!res.ok) return { ok: false, authenticated: false };
-    return await res.json();
+    const data = await res.json();
+    return data;
   } catch {
     return { ok: false, authenticated: false };
   }
 }
 
 export async function signOutRam(): Promise<void> {
+  localStorage.removeItem('ram_token');
+  localStorage.removeItem('ram_session_id');
+  localStorage.removeItem('ram_session_backup');
+  activeSessionId = null;
   await fetch(`${BASE_URL}/auth/signout`, {
     method: 'POST',
     credentials: 'include',
