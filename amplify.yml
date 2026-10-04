@@ -4,6 +4,7 @@ frontend:
     preBuild:
       commands:
         - cd frontend
+        - env | grep -E '^VITE_' > .env.production
         - npm ci
     build:
       commands:
