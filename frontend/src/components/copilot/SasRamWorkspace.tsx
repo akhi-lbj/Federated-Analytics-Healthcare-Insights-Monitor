@@ -69,7 +69,7 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
   referrals,
   selectedFacility,
 }) => {
-  // Live Telemetry Calculations
+  // Live Telemetry Calculations for cards
   const criticalCount = edRecords.filter((r) => r.acuity === 1 || r.acuity === 2).length;
   const totalBeds = wards.reduce((acc, w) => acc + (w.total_beds || 0), 0);
   const totalOccupied = wards.reduce((acc, w) => acc + (w.occupied || 0), 0);
@@ -79,7 +79,7 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
     {
       id: 'welcome-primary',
       role: 'assistant',
-      content: `### 🌟 Welcome to Agent FAHIM\n\nI am connected directly to **SAS Retrieval Agent Manager (SAS RAM)** and the **Emirates Health Services (EHS)** regional hospital network.\n\nI continuously monitor real-time clinical telemetry from your **PostgreSQL Database**:\n- **Network Ward Occupancy:** **${wardOccupancy}%** (${totalOccupied.toLocaleString()} / ${totalBeds.toLocaleString()} occupied beds)\n- **Active ED Boarding Queue:** **${edRecords.length}** patients (**${criticalCount}** high-acuity CTAS 1 & 2)\n- **Discharge Readiness Registry:** **${dischargeCases.length}** active cases\n- **Inter-Facility Referrals:** **${referrals.length}** coordinated transfers across AQH, KWH, and SKMC\n\nAsk any question, request visualizations, or inspect operational bottlenecks below.`,
+      content: `### 🌟 Welcome to Agent FAHIM\n\nI am your clinical intelligence assistant powered by **SAS RAM**, connected to the **Emirates Health Services (EHS)** regional hospital network.\n\nAsk me anything about network capacity, ED boarding queues, discharge readiness, or transfer recommendations. How can I assist you today?`,
       insertTimestamp: new Date().toISOString(),
     },
   ]);
