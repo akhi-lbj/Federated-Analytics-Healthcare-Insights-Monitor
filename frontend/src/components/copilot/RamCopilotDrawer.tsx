@@ -52,7 +52,7 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
     {
       id: 'welcome-01',
       role: 'assistant',
-      content: `### Welcome to SAS RAM Clinical Decision Copilot\n\nI am connected to the **Emirates Health Services (EHS)** regional hospital network. I can assist you with:\n- Multi-facility bed capacity predictions (AQH, KWH, SKMC)\n- CTAS 1 & 2 resuscitation triage queue analysis\n- Automated KPI tracking & bottleneck diagnosis\n- Synthesizing inter-facility transfer recommendations\n\nHow can I support your operational shift today?`,
+      content: `### 🌟 Welcome to Agent FAHIM\n\nI am connected to the **Emirates Health Services (EHS)** regional hospital network. I can assist you with:\n- Multi-facility bed capacity predictions (AQH, KWH, SKMC)\n- CTAS 1 & 2 resuscitation triage queue analysis\n- Automated KPI tracking & bottleneck diagnosis\n- Synthesizing inter-facility transfer recommendations\n\nHow can I support your operational shift today?`,
     },
   ]);
 
@@ -147,7 +147,7 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
         {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: `⚠️ **Agent Execution Error**: ${err.message || 'Unknown error occurred. Please verify your authentication status or SAS Viya connectivity.'}`,
+          content: `⚠️ **Agent Execution Error**: ${err.message || 'Unknown error occurred. Please verify your authentication status or SAS RAM connectivity.'}`,
           status: 'failed',
         },
       ]);

@@ -5,6 +5,22 @@ const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || 'team-ehs-ops';
 
 let activeSessionId: string | null = localStorage.getItem('ram_session_id');
 
+function isTokenExpired(token: string | null): boolean {
+  if (!token || token === 'null' || token === 'undefined' || token.trim() === '') return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length === 3) {
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (payload.exp && typeof payload.exp === 'number') {
+        return Date.now() / 1000 >= payload.exp - 10;
+      }
+    }
+  } catch {
+    // If not a parseable JWT, don't auto-expire
+  }
+  return false;
+}
+
 function getHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
   const token = localStorage.getItem('ram_token');
   const headers: Record<string, string> = {
@@ -12,11 +28,13 @@ function getHeaders(customHeaders: Record<string, string> = {}): Record<string, 
     'Accept': 'application/json',
     ...customHeaders,
   };
-  if (activeSessionId) {
+  if (activeSessionId && activeSessionId !== 'null' && activeSessionId !== 'undefined') {
     headers['X-Session-Id'] = activeSessionId;
   }
-  if (token) {
+  if (token && !isTokenExpired(token)) {
     headers['Authorization'] = `Bearer ${token}`;
+  } else if (token && isTokenExpired(token)) {
+    localStorage.removeItem('ram_token');
   }
   return headers;
 }
@@ -35,7 +53,11 @@ export async function checkRamHealth(): Promise<{
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error(`Health check returned ${res.status}`);
-    return await res.json();
+    const data = await res.json();
+    if (!data.authenticated) {
+      localStorage.removeItem('ram_token');
+    }
+    return data;
   } catch (e) {
     return {
       status: 'offline',
@@ -107,8 +129,14 @@ export async function restoreSession(session: any): Promise<{
       headers: getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ session }),
     });
-    if (!res.ok) return { ok: false, authenticated: false };
+    if (!res.ok) {
+      localStorage.removeItem('ram_session_backup');
+      return { ok: false, authenticated: false };
+    }
     const data = await res.json();
+    if (!data.authenticated) {
+      localStorage.removeItem('ram_session_backup');
+    }
     return data;
   } catch {
     return { ok: false, authenticated: false };

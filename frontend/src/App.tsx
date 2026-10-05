@@ -61,9 +61,10 @@ export const App: React.FC = () => {
   const checkAuth = async () => {
     try {
       const health = await checkRamHealth();
-      setIsRamAuthenticated(health.authenticated);
+      setIsRamAuthenticated(Boolean(health && health.authenticated));
     } catch (e) {
       console.error('RAM Health error:', e);
+      setIsRamAuthenticated(false);
     }
   };
 

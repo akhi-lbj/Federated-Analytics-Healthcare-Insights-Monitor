@@ -77,15 +77,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col">
         {/* Brand & Organization Header */}
         <div className="px-5 py-4 border-b border-[#1e293b] bg-[#070e1b]">
-          <div className="flex items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-primary glow-cyan"></span>
-              <span className="font-headline font-extrabold text-xs tracking-wider text-primary uppercase">
+          <div className="flex items-center justify-between pb-2 gap-2 flex-nowrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-primary glow-cyan flex-shrink-0"></span>
+              <span className="font-headline font-extrabold text-[11px] tracking-wider text-primary uppercase truncate">
                 Emirates Health Services
               </span>
             </div>
-            <span className="text-[10px] font-mono text-cyan-400 font-bold bg-[#0f172a] px-2 py-0.5 rounded border border-cyan-900">
-              SAS Viya AI
+            <span className="text-[10px] font-mono text-cyan-400 font-bold bg-[#0f172a] px-2 py-0.5 rounded border border-cyan-900 whitespace-nowrap flex-shrink-0 leading-none">
+              SAS RAM
             </span>
           </div>
 

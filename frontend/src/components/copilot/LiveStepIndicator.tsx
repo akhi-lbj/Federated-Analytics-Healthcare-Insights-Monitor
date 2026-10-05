@@ -38,7 +38,7 @@ export const LiveStepIndicator: React.FC<LiveStepIndicatorProps> = ({ trace, pol
       return 'Agent FAHIM received query — analyzing request & planning reasoning path...';
     }
     if (elapsed < 6) {
-      return 'Connecting to SAS Viya RAM Engine & evaluating hospital database schema...';
+      return 'Connecting to SAS RAM Engine & evaluating hospital database schema...';
     }
     return 'Agent is working on clinical reasoning and fetching live telemetry...';
   };

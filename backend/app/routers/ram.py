@@ -1,13 +1,30 @@
 import io
 import time
 import secrets
+import json
+import base64
 from typing import Optional, List, Dict, Any
+import httpx
 from fastapi import APIRouter, Request, Response, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from app.config import settings
 from app.services.ram_client import ram_service
 
 COOKIE_NAME = "ram_sid"
+
+def extract_jwt_exp(token: str) -> Optional[float]:
+    """Safely extracts the expiration timestamp from an unverified JWT payload."""
+    try:
+        parts = token.split(".")
+        if len(parts) == 3:
+            payload_b64 = parts[1] + "=" * (-len(parts[1]) % 4)
+            payload_json = base64.urlsafe_b64decode(payload_b64.encode()).decode("utf-8")
+            data = json.loads(payload_json)
+            if "exp" in data:
+                return float(data["exp"])
+    except Exception:
+        pass
+    return None
 
 async def get_session_context(request: Request, response: Response) -> str:
     raw_sid = request.headers.get("X-Session-Id") or request.cookies.get(COOKIE_NAME)
@@ -27,14 +44,24 @@ async def get_session_context(request: Request, response: Response) -> str:
     request.state.sid = sid
     request.state.raw_sid = raw_sid
 
-    # Auto-hydrate session token from Authorization header if provided
+    # Auto-hydrate session token from Authorization header if provided and valid
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
-        bearer_token = auth_header.split(" ", 1)[1]
-        session = ram_service.get_or_create_session(sid)
-        if not session.get("token"):
-            session["token"] = bearer_token
-            session["expires_at"] = time.time() + 300
+        bearer_token = auth_header.split(" ", 1)[1].strip()
+        if bearer_token and bearer_token not in ("null", "undefined", ""):
+            session = ram_service.get_or_create_session(sid)
+            exp = extract_jwt_exp(bearer_token)
+            if exp is not None:
+                if exp <= time.time():
+                    # Token already expired — do not accept
+                    session["token"] = None
+                    session["expires_at"] = 0
+                else:
+                    session["token"] = bearer_token
+                    session["expires_at"] = exp
+            elif settings.RAM_TOKEN and bearer_token == settings.RAM_TOKEN:
+                session["token"] = bearer_token
+                session["expires_at"] = time.time() + 86400
 
     return sid
 
@@ -53,17 +80,31 @@ async def health_check(request: Request):
         token = session.get("token")
         expires_at = session.get("expires_at", 0)
         
-        # Token valid and not expired
-        if token and expires_at > time.time() + 30:
-            authenticated = True
-        elif session.get("refresh_token"):
+        # Token must exist and its expiration timestamp must be in the future
+        if token and token not in ("null", "undefined", "") and expires_at > time.time() + 30:
+            # Actively verify with Keycloak userinfo to ensure token was not invalidated/revoked
+            try:
+                userinfo_url = f"{settings.KEYCLOAK_URL}/realms/{settings.REALM}/protocol/openid-connect/userinfo"
+                async with httpx.AsyncClient(verify=settings.VERIFY_SSL, timeout=3.0) as client:
+                    r = await client.get(userinfo_url, headers={"Authorization": f"Bearer {token}"})
+                    if r.status_code == 200:
+                        authenticated = True
+                    else:
+                        # Keycloak rejected the token
+                        session["token"] = None
+                        session["expires_at"] = 0
+                        authenticated = False
+            except Exception:
+                # Keycloak network timeout: honor valid unexpired JWT expiration
+                authenticated = expires_at > time.time() + 30
+
+        # If direct token didn't pass, attempt token refresh if refresh_token exists
+        if not authenticated and session.get("refresh_token"):
             try:
                 valid_tok = await ram_service.get_valid_token(sid)
                 authenticated = bool(valid_tok)
             except Exception:
                 authenticated = False
-        else:
-            authenticated = False
 
     return {
         "status": "ok" if authenticated else "signin_required",

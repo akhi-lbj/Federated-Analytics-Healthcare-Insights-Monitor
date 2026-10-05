@@ -241,7 +241,7 @@ export const QueryInspectorModal: React.FC<QueryInspectorModalProps> = ({
               ) : (
                 llmCalls.map((lc, idx) => (
                   <div key={lc.id || idx} className="bg-[#070e1b] border border-[#1e293b] p-3 rounded-lg flex flex-col gap-2">
-                    <span className="text-purple-300 font-bold">Model: {lc.model || 'SAS Viya Generative Engine'}</span>
+                    <span className="text-purple-300 font-bold">Model: {lc.model || 'SAS RAM Generative Engine'}</span>
                     <div className="grid grid-cols-2 gap-2 text-[11px]">
                       <div>Prompt Tokens: <strong className="text-slate-100">{lc.promptTokens}</strong></div>
                       <div>Completion Tokens: <strong className="text-slate-100">{lc.completionTokens}</strong></div>

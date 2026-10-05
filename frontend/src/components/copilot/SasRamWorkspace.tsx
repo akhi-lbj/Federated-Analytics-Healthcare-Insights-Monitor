@@ -79,7 +79,7 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
     {
       id: 'welcome-primary',
       role: 'assistant',
-      content: `### 🌟 Welcome to SAS RAM Clinical Decision Intelligence\n\nI am connected directly to **SAS Retrieval Agent Manager (Agent FAHIM)** and the **Emirates Health Services (EHS)** regional hospital network.\n\nI continuously monitor real-time clinical telemetry from your **PostgreSQL Database**:\n- **Network Ward Occupancy:** **${wardOccupancy}%** (${totalOccupied.toLocaleString()} / ${totalBeds.toLocaleString()} occupied beds)\n- **Active ED Boarding Queue:** **${edRecords.length}** patients (**${criticalCount}** high-acuity CTAS 1 & 2)\n- **Discharge Readiness Registry:** **${dischargeCases.length}** active cases\n- **Inter-Facility Referrals:** **${referrals.length}** coordinated transfers across AQH, KWH, and SKMC\n\nAsk any question, request visualizations, or inspect operational bottlenecks below.`,
+      content: `### 🌟 Welcome to Agent FAHIM\n\nI am connected directly to **SAS Retrieval Agent Manager (SAS RAM)** and the **Emirates Health Services (EHS)** regional hospital network.\n\nI continuously monitor real-time clinical telemetry from your **PostgreSQL Database**:\n- **Network Ward Occupancy:** **${wardOccupancy}%** (${totalOccupied.toLocaleString()} / ${totalBeds.toLocaleString()} occupied beds)\n- **Active ED Boarding Queue:** **${edRecords.length}** patients (**${criticalCount}** high-acuity CTAS 1 & 2)\n- **Discharge Readiness Registry:** **${dischargeCases.length}** active cases\n- **Inter-Facility Referrals:** **${referrals.length}** coordinated transfers across AQH, KWH, and SKMC\n\nAsk any question, request visualizations, or inspect operational bottlenecks below.`,
       insertTimestamp: new Date().toISOString(),
     },
   ]);
@@ -188,7 +188,7 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
           id: `err-${Date.now()}`,
           role: 'assistant',
           content: isAuthError
-            ? `⚠️ **SAS Viya Authentication Required**: Your session has expired or requires authorization. Please sign in to reconnect Agent FAHIM.`
+            ? `⚠️ **SAS RAM Authentication Required**: Your session has expired or requires authorization. Please sign in to reconnect Agent FAHIM.`
             : `⚠️ **Agent Execution Error**: ${errorText}`,
           status: 'failed',
         },
