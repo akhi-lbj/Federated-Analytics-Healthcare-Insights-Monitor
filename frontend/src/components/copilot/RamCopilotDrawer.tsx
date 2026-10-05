@@ -126,13 +126,28 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
 
       setTurns((prev) => [...prev, assistantTurn]);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Error executing agent query.');
+      const errText = err.message || 'Error executing agent query.';
+      setErrorMsg(errText);
+      const isPromptTemplateError =
+        errText.includes('ChatPromptTemplate') ||
+        errText.includes('missing variables') ||
+        errText.includes('INVALID_PROMPT_INPUT') ||
+        errText.includes('Prompt Template Syntax Error');
+
+      let content = `⚠️ **Agent Execution Error**: ${errText}`;
+      if (isPromptTemplateError) {
+        content =
+          `### ⚠️ Upstream SAS RAM Prompt Template Error\n\n` +
+          `The active agent in **SAS Retrieval Agent Manager** contains unescaped curly braces \`{}\` in its system prompt template.\n\n` +
+          `**Fix**: In the SAS RAM web console under **Agents**, edit the prompt instructions and escape any literal curly braces by replacing \`{}\` with \`{{}}\`.`;
+      }
+
       setTurns((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: `⚠️ **Agent Execution Error**: ${err.message || 'Unknown error occurred. Please verify your authentication status or SAS RAM connectivity.'}`,
+          content,
           status: 'failed',
         },
       ]);

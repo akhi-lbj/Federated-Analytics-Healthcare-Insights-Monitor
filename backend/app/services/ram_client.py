@@ -263,12 +263,14 @@ class RamClientService:
                 agents_res = await self.request(sid, "GET", "/agents?limit=10")
                 if agents_res.status_code == 200:
                     items = agents_res.json().get("items", [])
+                    logger.info(f"[RAM Agents] Available agents: {[{'id': a.get('id'), 'name': a.get('name')} for a in items]}")
                     fahim = next((a for a in items if "fahim" in a.get("name", "").lower()), None)
                     chosen = fahim or (items[0] if items else None)
                     if chosen:
                         target_agent = chosen.get("id")
-            except Exception:
-                pass
+                        logger.info(f"[RAM Agents] Selected agent: {chosen.get('name')} ({target_agent})")
+            except Exception as e:
+                logger.warning(f"[RAM Agents] Error listing /agents: {e}")
 
         if not target_agent:
             target_agent = "7011b392-41b7-4c46-a4a3-760db904d18e"
@@ -323,14 +325,34 @@ class RamClientService:
         )
 
         if error_code != 0 or error_text:
+            err_msg = error_text or f"SAS RAM Agent reported error code {error_code}"
+            if "ChatPromptTemplate" in err_msg or "missing variables" in err_msg or "INVALID_PROMPT_INPUT" in err_msg:
+                err_msg = (
+                    "SAS RAM Prompt Template Syntax Error: The agent's prompt template in SAS Retrieval Agent Manager contains an unescaped pair of curly braces '{}'. "
+                    "In LangChain/RAM prompt templates, literal curly braces must be escaped with double braces '{{}}'. "
+                    "Please update the agent's system prompt in the SAS RAM console by replacing '{}' with '{{}}'."
+                )
             return {
                 "id": query_id,
                 "querySessionId": session_id,
                 "status": "failed",
-                "error": error_text or f"SAS RAM Agent reported error code {error_code}",
+                "error": err_msg,
             }
 
         if response_obj:
+            if isinstance(response_obj, dict):
+                r_err = response_obj.get("error") or response_obj.get("errorText") or response_obj.get("errorMessage")
+                if r_err and ("ChatPromptTemplate" in str(r_err) or "missing variables" in str(r_err) or "INVALID_PROMPT_INPUT" in str(r_err)):
+                    return {
+                        "id": query_id,
+                        "querySessionId": session_id,
+                        "status": "failed",
+                        "error": (
+                            "SAS RAM Prompt Template Syntax Error: The agent's prompt template in SAS Retrieval Agent Manager contains an unescaped pair of curly braces '{}'. "
+                            "In LangChain/RAM prompt templates, literal curly braces must be escaped with double braces '{{}}'. "
+                            "Please update the agent's system prompt in the SAS RAM console by replacing '{}' with '{{}}'."
+                        ),
+                    }
             content = ""
             sources = []
             usage_metadata = None

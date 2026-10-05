@@ -167,14 +167,44 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
         onAuthExpired?.();
       }
 
+      const isPromptTemplateError =
+        errorText.includes('ChatPromptTemplate') ||
+        errorText.includes('missing variables') ||
+        errorText.includes('INVALID_PROMPT_INPUT') ||
+        errorText.includes('Prompt Template Syntax Error');
+
+      let fallbackContent = '';
+      if (isAuthError) {
+        fallbackContent = `⚠️ **SAS RAM Authentication Required**: Your session has expired or requires authorization. Please sign in to reconnect Agent FAHIM.`;
+      } else if (isPromptTemplateError) {
+        fallbackContent = 
+          `### ⚠️ Upstream SAS RAM Prompt Template Syntax Error\n\n` +
+          `**Root Cause**: The agent configured in **SAS Retrieval Agent Manager (SAS RAM)** on SAS Viya contains literal unescaped curly braces \`{}\` in its system prompt / instructions.\n\n` +
+          `Under the hood, SAS RAM compiles agents using LangChain's \`ChatPromptTemplate\`. In LangChain templates, any single pair of curly braces \`{}\` is treated as a prompt variable with an empty name \`""\`. When the query executes, LangChain halts execution with:\n` +
+          `> \`Input to ChatPromptTemplate is missing variables {''}. Expected: [''] Received: []\`\n\n` +
+          `#### 🛠️ How to Fix in SAS Viya (1-Minute Fix):\n` +
+          `1. Open the SAS Retrieval Agent Manager web console: [https://viya-mulh9cfuy9.engage.sas.com/SASRetrievalAgentManager/](https://viya-mulh9cfuy9.engage.sas.com/SASRetrievalAgentManager/)\n` +
+          `2. Navigate to **Agents** and click on your active agent (**Agent FAHIM**).\n` +
+          `3. In the **Instructions / System Prompt**, search for any unescaped curly braces \`{}\` (such as in JSON schema examples or format placeholders).\n` +
+          `4. Escape each literal bracket by doubling them: replace \`{}\` with \`{{}}\`.\n` +
+          `5. Save and publish the agent.\n\n` +
+          `--- \n\n` +
+          `#### 📊 Live Database Telemetry (PostgreSQL Direct Fallback):\n` +
+          `While the upstream SAS RAM prompt escaping is updated, your live EHS hospital telemetry is unaffected and active below:\n\n` +
+          `* **Network Ward Occupancy**: **${wardOccupancy}%** (${totalOccupied} / ${totalBeds} occupied beds across 10 EHS facilities)\n` +
+          `* **Emergency Boarding Queue**: **${edRecords.length} patients** (${criticalCount} high-acuity CTAS 1 & 2 resuscitation cases)\n` +
+          `* **Discharge Registry**: **${dischargeCases.length} active review cases**\n` +
+          `* **Inter-Hospital Referrals**: **${referrals.length} coordinated transfers** across AQH, KWH, and SKMC`;
+      } else {
+        fallbackContent = `⚠️ **Agent Execution Error**: ${errorText}`;
+      }
+
       setTurns((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: isAuthError
-            ? `⚠️ **SAS RAM Authentication Required**: Your session has expired or requires authorization. Please sign in to reconnect Agent FAHIM.`
-            : `⚠️ **Agent Execution Error**: ${errorText}`,
+          content: fallbackContent,
           status: 'failed',
         },
       ]);
