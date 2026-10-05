@@ -10,8 +10,7 @@ import {
 import { 
   streamAgentQuery, 
   listSessions, 
-  loadSessionHistory, 
-  restoreSession 
+  loadSessionHistory 
 } from '../../lib/ramApi';
 import { LiveStepIndicator } from './LiveStepIndicator';
 import { ToolCallTrace } from './ToolCallTrace';
@@ -101,20 +100,6 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [turns, liveTrace, isLoading]);
 
-  // Silently restore session backup if available
-  useEffect(() => {
-    const backup = localStorage.getItem('ram_session_backup');
-    if (backup && !isAuthenticated) {
-      try {
-        const session = JSON.parse(backup);
-        restoreSession(session).then((res) => {
-          if (res.ok) {
-            console.log('Silently restored RAM session.');
-          }
-        });
-      } catch {}
-    }
-  }, [isAuthenticated]);
 
   const handleSend = async (customPrompt?: string) => {
     const promptToSend = customPrompt || inputContent;

@@ -61,9 +61,6 @@ export const SignInModal: React.FC<SignInModalProps> = ({
           setIsApproved(true);
           clearInterval(intervalId);
           setPollingStatus('Authentication approved! Binding session...');
-          if (res.session) {
-            localStorage.setItem('ram_session_backup', JSON.stringify(res.session));
-          }
           setTimeout(() => {
             onSuccess();
             onClose();

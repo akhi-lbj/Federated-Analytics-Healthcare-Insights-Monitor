@@ -3,7 +3,20 @@ import { TraceAggregate, RamAttachment, RamTurn } from '../types/ram';
 const BASE_URL = import.meta.env.VITE_RAM_GATEWAY_URL || '/api/ram';
 const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || 'team-ehs-ops';
 
-let activeSessionId: string | null = localStorage.getItem('ram_session_id');
+// Ephemeral in-memory state: A fresh session ID is created on every page load/refresh.
+// This guarantees that refreshing the page resets the connection to disconnected (red)
+// and requires authentication again.
+let activeSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+let activeToken: string | null = null;
+
+// Clean up any stale localStorage tokens on module load
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('ram_token');
+    localStorage.removeItem('ram_session_id');
+    localStorage.removeItem('ram_session_backup');
+  } catch {}
+}
 
 function isTokenExpired(token: string | null): boolean {
   if (!token || token === 'null' || token === 'undefined' || token.trim() === '') return true;
@@ -22,19 +35,14 @@ function isTokenExpired(token: string | null): boolean {
 }
 
 function getHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
-  const token = localStorage.getItem('ram_token');
   const headers: Record<string, string> = {
     'X-Team-Id': TEAM_ID,
     'Accept': 'application/json',
+    'X-Session-Id': activeSessionId,
     ...customHeaders,
   };
-  if (activeSessionId && activeSessionId !== 'null' && activeSessionId !== 'undefined') {
-    headers['X-Session-Id'] = activeSessionId;
-  }
-  if (token && !isTokenExpired(token)) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else if (token && isTokenExpired(token)) {
-    localStorage.removeItem('ram_token');
+  if (activeToken && !isTokenExpired(activeToken)) {
+    headers['Authorization'] = `Bearer ${activeToken}`;
   }
   return headers;
 }
@@ -86,7 +94,6 @@ export async function startDeviceLogin(): Promise<{
   const data = await res.json();
   if (data.sessionId) {
     activeSessionId = data.sessionId;
-    localStorage.setItem('ram_session_id', data.sessionId);
   }
   return data;
 }
@@ -109,11 +116,10 @@ export async function pollDeviceLogin(deviceCode?: string, verifier?: string): P
   if (!res.ok) throw new Error(`Polling failed: ${await res.text()}`);
   const data = await res.json();
   if (data.token) {
-    localStorage.setItem('ram_token', data.token);
+    activeToken = data.token;
   }
   if (data.sessionId) {
     activeSessionId = data.sessionId;
-    localStorage.setItem('ram_session_id', data.sessionId);
   }
   return data;
 }
@@ -130,13 +136,9 @@ export async function restoreSession(session: any): Promise<{
       body: JSON.stringify({ session }),
     });
     if (!res.ok) {
-      localStorage.removeItem('ram_session_backup');
       return { ok: false, authenticated: false };
     }
     const data = await res.json();
-    if (!data.authenticated) {
-      localStorage.removeItem('ram_session_backup');
-    }
     return data;
   } catch {
     return { ok: false, authenticated: false };
@@ -144,10 +146,15 @@ export async function restoreSession(session: any): Promise<{
 }
 
 export async function signOutRam(): Promise<void> {
-  localStorage.removeItem('ram_token');
-  localStorage.removeItem('ram_session_id');
-  localStorage.removeItem('ram_session_backup');
-  activeSessionId = null;
+  activeToken = null;
+  activeSessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('ram_token');
+      localStorage.removeItem('ram_session_id');
+      localStorage.removeItem('ram_session_backup');
+    } catch {}
+  }
   await fetch(`${BASE_URL}/auth/signout`, {
     method: 'POST',
     credentials: 'include',

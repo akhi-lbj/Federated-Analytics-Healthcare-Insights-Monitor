@@ -10,8 +10,7 @@ import {
 import { 
   streamAgentQuery, 
   listSessions, 
-  loadSessionHistory, 
-  restoreSession 
+  loadSessionHistory 
 } from '../../lib/ramApi';
 import { extractPresentations } from '../../lib/ramExtractors';
 import { LiveStepIndicator } from './LiveStepIndicator';
@@ -73,20 +72,6 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [turns, liveTrace, isLoading]);
 
-  // Check and silently restore session if available in localStorage
-  useEffect(() => {
-    const backup = localStorage.getItem('ram_session_backup');
-    if (backup && !isAuthenticated) {
-      try {
-        const session = JSON.parse(backup);
-        restoreSession(session).then((res) => {
-          if (res.ok) {
-            console.log('Silently restored RAM session.');
-          }
-        });
-      } catch {}
-    }
-  }, [isAuthenticated]);
 
   const handleSend = async (customPrompt?: string) => {
     const promptToSend = customPrompt || inputContent;

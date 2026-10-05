@@ -33,10 +33,9 @@ async def get_session_context(request: Request, response: Response) -> str:
         response.set_cookie(
             key=COOKIE_NAME,
             value=raw_sid,
-            max_age=86400 * 30,
             httponly=True,
-            samesite="none",
-            secure=True,
+            samesite="lax",
+            secure=settings.COOKIE_SECURE,
             path="/"
         )
     team_id = request.headers.get("X-Team-Id", "default")
