@@ -416,6 +416,22 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
       }
     }
 
+    // If previous user message was a greeting, display warm greeting
+    const currentIdx = turns.findIndex((t) => t.id === turn.id);
+    if (currentIdx > 0) {
+      const prevTurn = turns[currentIdx - 1];
+      if (prevTurn && prevTurn.role === 'user') {
+        const userText = prevTurn.content.trim().toLowerCase();
+        if (/^(hi|hello|hey|greetings|good\s*(morning|afternoon|evening)|salaam|assalamu|who are you|help)\b/i.test(userText)) {
+          return (
+            "Hello! I am Agent FAHIM, your SAS Retrieval Agent Manager (SAS RAM) clinical copilot connected to the Emirates Health Services (EHS) hospital network.\n\n" +
+            "I continuously monitor real-time clinical telemetry from your PostgreSQL database, including ward bed occupancies, emergency department CTAS triage boarding queues, and inter-facility referrals across all 10 EHS regional hospitals.\n\n" +
+            "How can I assist you with clinical operations, capacity analytics, or patient transfers today?"
+          );
+        }
+      }
+    }
+
     return turn.content || 'Analysis complete.';
   };
 

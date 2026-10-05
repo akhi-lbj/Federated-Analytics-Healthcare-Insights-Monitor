@@ -296,8 +296,24 @@ export async function streamAgentQuery(params: {
 
     if (status.status === 'completed') {
       const finalTrace = await fetchQueryTrace(queryId);
+      
+      let finalContent = status.content;
+      if (!finalContent || finalContent.trim() === '' || finalContent === 'Analysis complete.') {
+        const userPrompt = params.content.trim().toLowerCase();
+        const isGreeting = /^(hi|hello|hey|greetings|good\s*(morning|afternoon|evening)|salaam|assalamu|who are you|help)\b/i.test(userPrompt);
+        
+        if (isGreeting) {
+          finalContent =
+            "Hello! I am Agent FAHIM, your SAS Retrieval Agent Manager (SAS RAM) clinical copilot connected to the Emirates Health Services (EHS) hospital network.\n\n" +
+            "I continuously monitor real-time clinical telemetry from your PostgreSQL database, including ward bed occupancies, emergency department CTAS triage boarding queues, and inter-facility referrals across all 10 EHS regional hospitals.\n\n" +
+            "How can I assist you with clinical operations, capacity analytics, or patient transfers today?";
+        } else {
+          finalContent = 'Analysis complete.';
+        }
+      }
+
       return {
-        content: status.content || 'Analysis complete.',
+        content: finalContent,
         queryId,
         querySessionId: status.querySessionId || submission.querySessionId,
         trace: finalTrace || latestTrace,

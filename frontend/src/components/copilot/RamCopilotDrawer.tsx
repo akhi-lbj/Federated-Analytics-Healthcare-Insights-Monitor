@@ -228,11 +228,24 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
 
         {/* Conversation Message Feed */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 text-xs">
-          {turns.map((turn) => {
+          {turns.map((turn, idx) => {
             const isUser = turn.role === 'user';
             const chartSpecs = extractChartSpecs(turn.trace?.toolCalls);
             const reportSpecs = extractReportSpecs(turn.trace?.toolCalls);
             const presentationSpecs = extractPresentations(turn.trace?.toolCalls, turn.content);
+
+            let displayContent = turn.content;
+            if (!isUser && (!displayContent || displayContent === 'Analysis complete.')) {
+              if (idx > 0 && turns[idx - 1]?.role === 'user') {
+                const uPrompt = turns[idx - 1].content.trim().toLowerCase();
+                if (/^(hi|hello|hey|greetings|good\s*(morning|afternoon|evening)|salaam|assalamu|who are you|help)\b/i.test(uPrompt)) {
+                  displayContent =
+                    "Hello! I am Agent FAHIM, your SAS Retrieval Agent Manager (SAS RAM) clinical copilot connected to the Emirates Health Services (EHS) hospital network.\n\n" +
+                    "I continuously monitor real-time clinical telemetry from your PostgreSQL database, including ward bed occupancies, emergency department CTAS triage boarding queues, and inter-facility referrals across all 10 EHS regional hospitals.\n\n" +
+                    "How can I assist you with clinical operations, capacity analytics, or patient transfers today?";
+                }
+              }
+            }
 
             return (
               <div
@@ -272,7 +285,7 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
                   )}
 
                   {/* Main Bubble Content (Formatted Markdown & Tables) */}
-                  <DynamicMarkdown content={turn.content} />
+                  <DynamicMarkdown content={displayContent || 'Analysis complete.'} />
 
                   {/* PowerPoint Presentation Deck Artifacts */}
                   {presentationSpecs.map((spec, pIdx) => (
