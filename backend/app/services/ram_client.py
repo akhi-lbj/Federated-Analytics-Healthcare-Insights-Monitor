@@ -201,6 +201,7 @@ class RamClientService:
                 "authenticated": True,
                 "session": self.export_session(sid),
                 "token": data["access_token"],
+                "refreshToken": data.get("refresh_token"),
             }
 
         err = data.get("error")

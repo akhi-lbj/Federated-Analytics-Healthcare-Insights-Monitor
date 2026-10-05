@@ -159,9 +159,9 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
 
       const isAuthError =
         errorText.toLowerCase().includes('authentication required') ||
-        errorText.toLowerCase().includes('sign in') ||
-        errorText.toLowerCase().includes('401') ||
-        errorText.toLowerCase().includes('session expired');
+        errorText.toLowerCase().includes('session expired') ||
+        errorText.toLowerCase().includes('unauthorized') ||
+        errorText.includes('401');
 
       if (isAuthError) {
         onAuthExpired?.();

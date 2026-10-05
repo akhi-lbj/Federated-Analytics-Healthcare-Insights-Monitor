@@ -5,9 +5,10 @@ const TEAM_ID = import.meta.env.VITE_DEFAULT_TEAM_ID || 'team-ehs-ops';
 
 // Ephemeral in-memory state: A fresh session ID is created on every page load/refresh.
 // This guarantees that refreshing the page resets the connection to disconnected (red)
-// and requires authentication again.
+// and requires authentication again, while remaining persistent during active use.
 let activeSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 let activeToken: string | null = null;
+let activeRefreshToken: string | null = null;
 
 // Clean up any stale localStorage tokens on module load
 if (typeof window !== 'undefined') {
@@ -41,8 +42,11 @@ function getHeaders(customHeaders: Record<string, string> = {}): Record<string, 
     'X-Session-Id': activeSessionId,
     ...customHeaders,
   };
-  if (activeToken && !isTokenExpired(activeToken)) {
+  if (activeToken) {
     headers['Authorization'] = `Bearer ${activeToken}`;
+  }
+  if (activeRefreshToken) {
+    headers['X-Refresh-Token'] = activeRefreshToken;
   }
   return headers;
 }
@@ -53,6 +57,8 @@ export async function checkRamHealth(): Promise<{
   signinFlow: 'device' | 'code';
   viyaAuthUrl?: string;
   clientConfig?: any;
+  token?: string;
+  refreshToken?: string;
 }> {
   try {
     const res = await fetch(`${BASE_URL}/health`, {
@@ -61,9 +67,16 @@ export async function checkRamHealth(): Promise<{
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error(`Health check returned ${res.status}`);
+    const newTok = res.headers.get('x-new-token');
+    if (newTok) {
+      activeToken = newTok;
+    }
     const data = await res.json();
-    if (!data.authenticated) {
-      localStorage.removeItem('ram_token');
+    if (data.token) {
+      activeToken = data.token;
+    }
+    if (data.refreshToken) {
+      activeRefreshToken = data.refreshToken;
     }
     return data;
   } catch (e) {
@@ -103,6 +116,7 @@ export async function pollDeviceLogin(deviceCode?: string, verifier?: string): P
   authenticated?: boolean;
   session?: any;
   token?: string;
+  refreshToken?: string;
   pending?: boolean;
   slowDown?: boolean;
   sessionId?: string;
@@ -117,6 +131,11 @@ export async function pollDeviceLogin(deviceCode?: string, verifier?: string): P
   const data = await res.json();
   if (data.token) {
     activeToken = data.token;
+  }
+  if (data.refreshToken) {
+    activeRefreshToken = data.refreshToken;
+  } else if (data.session?.refresh_token) {
+    activeRefreshToken = data.session.refresh_token;
   }
   if (data.sessionId) {
     activeSessionId = data.sessionId;
@@ -147,6 +166,7 @@ export async function restoreSession(session: any): Promise<{
 
 export async function signOutRam(): Promise<void> {
   activeToken = null;
+  activeRefreshToken = null;
   activeSessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   if (typeof window !== 'undefined') {
     try {
