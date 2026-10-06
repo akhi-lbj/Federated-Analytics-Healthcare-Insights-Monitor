@@ -3,12 +3,12 @@ frontend:
   phases:
     preBuild:
       commands:
-        - cd frontend
+        - if [ -d "frontend" ]; then cd frontend; fi
         - env | grep -E '^VITE_' > .env.production || true
         - npm ci
     build:
       commands:
-        - cd frontend
+        - if [ -d "frontend" ]; then cd frontend; fi
         - npm run build
   artifacts:
     baseDirectory: frontend/dist
