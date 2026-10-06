@@ -76,29 +76,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="fixed left-0 top-0 h-full w-72 bg-[#060e20] border-r border-[#1e293b] z-50 flex flex-col justify-between shadow-2xl">
       <div className="flex flex-col">
         {/* Brand & Organization Header */}
-        <div className="px-5 py-4 border-b border-[#1e293b] bg-[#070e1b]">
-          <div className="flex items-center justify-between pb-2 gap-2 flex-nowrap">
+        <div className="px-4 py-3.5 border-b border-[#1e293b] bg-[#070e1b]">
+          <div className="flex items-center justify-between pb-2 gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-primary glow-cyan flex-shrink-0"></span>
-              <span className="font-headline font-extrabold text-[11px] tracking-wider text-primary uppercase truncate">
+              <span className="w-2 h-2 rounded-full bg-primary glow-cyan shrink-0"></span>
+              <span className="font-headline font-bold text-xs text-slate-200 tracking-wide truncate">
                 Emirates Health Services
               </span>
             </div>
-            <span className="text-[10px] font-mono text-cyan-400 font-bold bg-[#0f172a] px-2 py-0.5 rounded border border-cyan-900 whitespace-nowrap flex-shrink-0 leading-none">
+            <span className="text-[10px] font-mono text-cyan-400 font-bold bg-[#0f172a] px-2 py-0.5 rounded border border-cyan-800/80 whitespace-nowrap shrink-0 leading-none">
               SAS RAM
             </span>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex flex-col min-w-0 pr-1">
-              <span className="font-headline text-[13px] font-extrabold text-[#dae2fd] tracking-tight uppercase leading-tight">
+          <div className="flex items-center justify-between pt-1.5 gap-2">
+            <div className="flex flex-col min-w-0">
+              <span className="font-headline text-[13px] font-extrabold text-[#dae2fd] tracking-tight leading-snug">
                 Healthcare Insights Monitor
               </span>
-              <span className="text-[10px] font-bold text-primary tracking-wide uppercase leading-none mt-0.5">
-                Project F.A.H.I.M.
+              <span className="text-[10px] font-bold text-primary font-mono tracking-wider leading-none mt-1">
+                PROJECT F.A.H.I.M.
               </span>
             </div>
-            <span className="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 border border-emerald-800 text-[10px] font-bold rounded-full flex items-center gap-1.5 flex-shrink-0">
+            <span className="px-2 py-0.5 bg-emerald-950/70 text-emerald-400 border border-emerald-800 text-[10px] font-bold rounded-full flex items-center gap-1.5 shrink-0 self-center">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               LIVE
             </span>

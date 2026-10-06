@@ -18,7 +18,6 @@ import { QueryInspectorModal } from './QueryInspectorModal';
 import { ChartWidget } from './ChartWidget';
 import { ReportWidget } from './ReportWidget';
 import { PresentationWidget } from './PresentationWidget';
-import { AttachmentBar } from './AttachmentBar';
 import { DynamicMarkdown } from '../common/DynamicMarkdown';
 import { 
   Bot, 
@@ -84,8 +83,6 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
   ]);
 
   const [inputContent, setInputContent] = useState('');
-  const [attachments, setAttachments] = useState<RamAttachment[]>([]);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [liveTrace, setLiveTrace] = useState<TraceAggregate | null>(null);
   const [pollTick, setPollTick] = useState(0);
@@ -103,7 +100,7 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
 
   const handleSend = async (customPrompt?: string) => {
     const promptToSend = customPrompt || inputContent;
-    if (!promptToSend.trim() && attachments.length === 0) return;
+    if (!promptToSend.trim()) return;
 
     if (!isAuthenticated) {
       onOpenSignIn();
@@ -114,14 +111,11 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
       id: `user-${Date.now()}`,
       role: 'user',
       content: promptToSend,
-      attachments: [...attachments],
       insertTimestamp: new Date().toISOString(),
     };
 
     setTurns((prev) => [...prev, userTurn]);
     setInputContent('');
-    const currentAttachments = [...attachments];
-    setAttachments([]);
     setIsLoading(true);
     setLiveTrace(null);
     setPollTick(0);
@@ -131,7 +125,6 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
       const response = await streamAgentQuery({
         content: promptToSend,
         sessionId,
-        attachments: currentAttachments,
         onTraceUpdate: (trace) => setLiveTrace(trace),
         onPollTick: (tick) => setPollTick(tick),
       });
@@ -785,17 +778,8 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
           ))}
         </div>
 
-        {/* ── INPUT CONSOLE & ATTACHMENT BAR ── */}
+        {/* ── INPUT CONSOLE ── */}
         <div className="p-6 bg-[#070e1b] border-t border-[#1e293b] flex flex-col gap-3">
-          <AttachmentBar
-            attachments={attachments}
-            onAddAttachment={(att) => setAttachments((prev) => [...prev, att])}
-            onRemoveAttachment={(idx) => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
-            isExtracting={isExtracting}
-            setIsExtracting={setIsExtracting}
-            onError={(msg) => setErrorMsg(msg)}
-          />
-
           <div className="flex items-end gap-3 bg-[#0b1326] border border-[#1e293b] rounded-2xl p-2.5 focus-within:border-primary transition-all shadow-inner">
             <textarea
               value={inputContent}
@@ -813,7 +797,7 @@ export const SasRamWorkspace: React.FC<SasRamWorkspaceProps> = ({
             <button
               type="button"
               onClick={() => handleSend()}
-              disabled={isLoading || (!inputContent.trim() && attachments.length === 0)}
+              disabled={isLoading || !inputContent.trim()}
               className="w-10 h-10 rounded-xl bg-primary hover:bg-primary-hover disabled:bg-slate-800 disabled:text-slate-600 text-[#060e20] flex items-center justify-center transition-all flex-shrink-0 font-bold shadow-md"
               title="Send prompt"
             >

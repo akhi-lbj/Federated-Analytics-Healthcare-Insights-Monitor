@@ -135,7 +135,7 @@ export const App: React.FC = () => {
           onSelectFacility={setSelectedFacility}
         />
 
-        <main className="pt-24 px-8 pb-12 min-h-screen max-w-7xl mx-auto w-full">
+        <main className="pt-28 px-8 pb-12 min-h-screen max-w-7xl mx-auto w-full">
           {/* VIEW 1: SAS RAM CLINICAL INTELLIGENCE (MAIN CHARACTER) */}
           {currentModule === 'sas-ram' && (
             <SasRamWorkspace

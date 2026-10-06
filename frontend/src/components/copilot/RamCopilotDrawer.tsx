@@ -19,7 +19,6 @@ import { QueryInspectorModal } from './QueryInspectorModal';
 import { ChartWidget } from './ChartWidget';
 import { ReportWidget } from './ReportWidget';
 import { PresentationWidget } from './PresentationWidget';
-import { AttachmentBar } from './AttachmentBar';
 import { DynamicMarkdown } from '../common/DynamicMarkdown';
 import { 
   X, 
@@ -56,8 +55,6 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
   ]);
 
   const [inputContent, setInputContent] = useState('');
-  const [attachments, setAttachments] = useState<RamAttachment[]>([]);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [liveTrace, setLiveTrace] = useState<TraceAggregate | null>(null);
   const [pollTick, setPollTick] = useState(0);
@@ -75,7 +72,7 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
 
   const handleSend = async (customPrompt?: string) => {
     const promptToSend = customPrompt || inputContent;
-    if (!promptToSend.trim() && attachments.length === 0) return;
+    if (!promptToSend.trim()) return;
 
     if (!isAuthenticated) {
       onOpenSignIn();
@@ -86,14 +83,11 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
       id: `user-${Date.now()}`,
       role: 'user',
       content: promptToSend,
-      attachments: [...attachments],
       insertTimestamp: new Date().toISOString(),
     };
 
     setTurns((prev) => [...prev, userTurn]);
     setInputContent('');
-    const currentAttachments = [...attachments];
-    setAttachments([]);
     setIsLoading(true);
     setLiveTrace(null);
     setPollTick(0);
@@ -103,7 +97,6 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
       const response = await streamAgentQuery({
         content: promptToSend,
         sessionId,
-        attachments: currentAttachments,
         onTraceUpdate: (trace) => setLiveTrace(trace),
         onPollTick: (tick) => setPollTick(tick),
       });
@@ -372,17 +365,8 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
           ))}
         </div>
 
-        {/* Input Bar & Attachment Container */}
+        {/* Input Bar */}
         <div className="p-4 bg-[#070e1b] border-t border-[#1e293b] flex flex-col gap-2.5">
-          <AttachmentBar
-            attachments={attachments}
-            onAddAttachment={(att) => setAttachments((prev) => [...prev, att])}
-            onRemoveAttachment={(i) => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}
-            isExtracting={isExtracting}
-            setIsExtracting={setIsExtracting}
-            onError={(msg) => setErrorMsg(msg)}
-          />
-
           <div className="flex items-end gap-2 bg-[#0b1326] border border-[#1e293b] rounded-xl p-2 focus-within:border-primary transition-all">
             <textarea
               value={inputContent}
@@ -401,7 +385,7 @@ export const RamCopilotDrawer: React.FC<RamCopilotDrawerProps> = ({
             <button
               type="button"
               onClick={() => handleSend()}
-              disabled={isLoading || (!inputContent.trim() && attachments.length === 0)}
+              disabled={isLoading || !inputContent.trim()}
               className="w-8 h-8 rounded-lg bg-primary hover:bg-primary-hover disabled:bg-slate-800 disabled:text-slate-600 text-[#060e20] flex items-center justify-center transition-all flex-shrink-0 font-bold"
             >
               <Send className="w-4 h-4" />
